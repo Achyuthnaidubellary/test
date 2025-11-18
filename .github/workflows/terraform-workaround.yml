@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
 
 env:
-  # GitHub environment variables (UPPERCASE - typical GitHub convention)
-  ENVIRONMENT_NAME: "production"
-  PROJECT_ID: "my-prod-project-456"
-  REGION: "us-west-2"
-  CLUSTER_NAME: "prod-cluster"
+  # Fetch from GitHub environment variables (set in Settings -> Environments -> test)
+  ENVIRONMENT_NAME: ${{ vars.ENVIRONMENT_NAME }}
+  PROJECT_ID: ${{ vars.PROJECT_ID }}
+  REGION: ${{ vars.REGION || 'us-west-2' }}
+  CLUSTER_NAME: ${{ vars.CLUSTER_NAME || 'default-cluster' }}
 
 jobs:
   terraform-with-workaround:

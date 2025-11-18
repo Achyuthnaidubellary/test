@@ -8,17 +8,12 @@ on:
     branches: [main]
 
 env:
-  # REAL SCENARIO: GitHub typically uses UPPERCASE for env vars
-  # Testing if UPPERCASE GitHub vars can map to lowercase Terraform variables
-  
-  # REAL SCENARIO: GitHub typically uses UPPERCASE for env vars
-  # Testing if UPPERCASE GitHub vars can map to lowercase Terraform variables
-  
-  # Attempt 1: UPPERCASE env var trying to set lowercase terraform var
-  TF_VAR_ENVIRONMENT_NAME: "github-env-UPPERCASE"
-  TF_VAR_PROJECT_ID: "github-project-UPPERCASE"
-  TF_VAR_REGION: "us-west-2"
-  TF_VAR_CLUSTER_NAME: "my-cluster"
+  # Fetch from GitHub environment variables (set in Settings -> Environments -> test)
+  TF_VAR_ENVIRONMENT_NAME: ${{ vars.TF_VAR_ENVIRONMENT_NAME }}
+  TF_VAR_PROJECT_ID: ${{ vars.TF_VAR_PROJECT_ID }}
+  TF_VAR_NAME: ${{ vars.TF_VAR_NAME }}
+  ENVIRONMENT_NAME: ${{ vars.ENVIRONMENT_NAME }}
+  PROJECT_ID: ${{ vars.PROJECT_ID }}
 
 jobs:
   terraform-case-test:
@@ -35,10 +30,20 @@ jobs:
         with:
           terraform_version: 1.6.0
       
+      - name: Display GitHub Environment Variables
+        run: |
+          echo "=== GitHub Environment Variables (from 'test' environment) ==="
+          echo "ENVIRONMENT_NAME: ${{ vars.ENVIRONMENT_NAME }}"
+          echo "PROJECT_ID: ${{ vars.PROJECT_ID }}"
+          echo "TF_VAR_ENVIRONMENT_NAME: ${{ vars.TF_VAR_ENVIRONMENT_NAME }}"
+          echo "TF_VAR_PROJECT_ID: ${{ vars.TF_VAR_PROJECT_ID }}"
+          echo "TF_VAR_NAME: ${{ vars.TF_VAR_NAME }}"
+          echo ""
+      
       - name: Display Environment Variables
         run: |
           echo "=== Environment Variables Set ==="
-          env | grep TF_VAR_ | sort
+          env | grep TF_VAR_ | sort || echo "No TF_VAR_ variables found"
           echo ""
       
       - name: Terraform Init
