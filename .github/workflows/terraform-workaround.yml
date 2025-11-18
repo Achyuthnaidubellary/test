@@ -64,20 +64,24 @@ jobs:
             lowercase_suffix=$(echo "$suffix" | tr '[:upper:]' '[:lower:]')
             new_var_name="TF_VAR_${lowercase_suffix}"
             
+            # Skip if already lowercase
+            if [ "$var_name" = "$new_var_name" ]; then
+              continue
+            fi
+            
             {
               echo "${new_var_name}<<GITHUB_ENV_EOF"
               echo "${var_value}"
               echo "GITHUB_ENV_EOF"
             } >> $GITHUB_ENV
             
-            if [ ${#var_value} -gt 100 ]; then
-              display_value="${var_value:0:97}..."
+            if [ ${#var_value} -gt 60 ]; then
+              display_value="${var_value:0:57}..."
             else
               display_value="$var_value"
             fi
             
-            echo "  ✓ ${var_name} → ${new_var_name}"
-            echo "    ${display_value}"
+            echo "  ✓ ${var_name} → ${new_var_name} = ${display_value}"
             ((processed++)) || true
           done
           
@@ -95,14 +99,13 @@ jobs:
               echo "GITHUB_ENV_EOF"
             } >> $GITHUB_ENV
             
-            if [ ${#var_value} -gt 100 ]; then
-              display_value="${var_value:0:97}..."
+            if [ ${#var_value} -gt 60 ]; then
+              display_value="${var_value:0:57}..."
             else
               display_value="$var_value"
             fi
             
-            echo "  ✓ ${var_name} → ${new_var_name}"
-            echo "    ${display_value}"
+            echo "  ✓ ${var_name} → ${new_var_name} = ${display_value}"
             ((processed++)) || true
           done
           
