@@ -30,19 +30,52 @@ jobs:
         with:
           terraform_version: 1.6.0
       
-      - name: Display GitHub Environment Variables
+      - name: Display Original GitHub Environment Variables
         run: |
-          echo "=== GitHub Environment Variables (from 'test' environment) ==="
-          echo "ENVIRONMENT_NAME: ${{ vars.ENVIRONMENT_NAME }}"
-          echo "PROJECT_ID: ${{ vars.PROJECT_ID }}"
+          echo "=== Original GitHub Environment Variables (from 'test' environment) ==="
           echo "TF_VAR_ENVIRONMENT_NAME: ${{ vars.TF_VAR_ENVIRONMENT_NAME }}"
           echo "TF_VAR_PROJECT_ID: ${{ vars.TF_VAR_PROJECT_ID }}"
           echo "TF_VAR_NAME: ${{ vars.TF_VAR_NAME }}"
           echo ""
       
-      - name: Display Environment Variables
+      - name: Transform TF_VAR_* to lowercase
         run: |
-          echo "=== Environment Variables Set ==="
+          echo "=== Transforming TF_VAR_* variables to lowercase ==="
+          
+          # Convert TF_VAR_NAME -> TF_VAR_name
+          if [ -n "${{ vars.TF_VAR_NAME }}" ]; then
+            echo "TF_VAR_name=${{ vars.TF_VAR_NAME }}" >> $GITHUB_ENV
+            echo "✅ TF_VAR_NAME -> TF_VAR_name = ${{ vars.TF_VAR_NAME }}"
+          fi
+          
+          # Convert TF_VAR_ENVIRONMENT_NAME -> TF_VAR_environment_name
+          if [ -n "${{ vars.TF_VAR_ENVIRONMENT_NAME }}" ]; then
+            echo "TF_VAR_environment_name=${{ vars.TF_VAR_ENVIRONMENT_NAME }}" >> $GITHUB_ENV
+            echo "✅ TF_VAR_ENVIRONMENT_NAME -> TF_VAR_environment_name = ${{ vars.TF_VAR_ENVIRONMENT_NAME }}"
+          fi
+          
+          # Convert TF_VAR_PROJECT_ID -> TF_VAR_project_id
+          if [ -n "${{ vars.TF_VAR_PROJECT_ID }}" ]; then
+            echo "TF_VAR_project_id=${{ vars.TF_VAR_PROJECT_ID }}" >> $GITHUB_ENV
+            echo "✅ TF_VAR_PROJECT_ID -> TF_VAR_project_id = ${{ vars.TF_VAR_PROJECT_ID }}"
+          fi
+          
+          # Also keep UPPERCASE versions for comparison
+          if [ -n "${{ vars.TF_VAR_ENVIRONMENT_NAME }}" ]; then
+            echo "TF_VAR_ENVIRONMENT_NAME=${{ vars.TF_VAR_ENVIRONMENT_NAME }}" >> $GITHUB_ENV
+          fi
+          if [ -n "${{ vars.TF_VAR_PROJECT_ID }}" ]; then
+            echo "TF_VAR_PROJECT_ID=${{ vars.TF_VAR_PROJECT_ID }}" >> $GITHUB_ENV
+          fi
+          if [ -n "${{ vars.TF_VAR_NAME }}" ]; then
+            echo "TF_VAR_NAME=${{ vars.TF_VAR_NAME }}" >> $GITHUB_ENV
+          fi
+          
+          echo ""
+      
+      - name: Display Transformed Environment Variables
+        run: |
+          echo "=== Transformed TF_VAR_ Variables ==="
           env | grep TF_VAR_ | sort || echo "No TF_VAR_ variables found"
           echo ""
       
