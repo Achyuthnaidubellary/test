@@ -83,7 +83,15 @@ jobs:
           echo ""
           echo "✅ Transformed $total_vars variable(s)"
           echo ""
-          env | grep "^TF_VAR_" | grep "^TF_VAR_[a-z]" | sort || echo "No transformed variables"
+          env | grep "^TF_VAR_" | grep "^TF_VAR_[a-z]" | sort | while IFS='=' read -r var_name var_value; do
+            # Try to format as JSON if it's valid JSON
+            if echo "$var_value" | jq . >/dev/null 2>&1; then
+              echo "${var_name}="
+              echo "$var_value" | jq -C '.'
+            else
+              echo "${var_name}=${var_value}"
+            fi
+          done
           echo ""
       
       - name: Terraform Init
