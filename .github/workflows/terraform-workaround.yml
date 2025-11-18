@@ -35,41 +35,43 @@ jobs:
           echo "TF_VAR_PROJECT_ID=${{ vars.TF_VAR_PROJECT_ID }}"
           echo ""
       
-      - name: Transform ALL TF_VAR_* to lowercase
+      - name: Transform ALL TF_VAR_* to lowercase (Dynamic)
+        env:
+          VARS_JSON: ${{ toJson(vars) }}
         run: |
-          echo "=== Transforming TF_VAR_* variables to lowercase ==="
+          echo "=== Dynamically Transforming ALL variables to lowercase ==="
           
-          # Transform TF_VAR_NAME -> TF_VAR_name
-          if [ -n "${{ vars.TF_VAR_NAME }}" ]; then
-            echo "TF_VAR_name=${{ vars.TF_VAR_NAME }}" >> $GITHUB_ENV
-            echo "✅ TF_VAR_NAME -> TF_VAR_name = ${{ vars.TF_VAR_NAME }}"
-          fi
+          # Process ALL TF_VAR_* variables
+          echo "$VARS_JSON" | jq -r 'to_entries[] | select(.key | startswith("TF_VAR_")) | "\(.key)=\(.value)"' | while IFS= read -r line; do
+            var_name=$(echo "$line" | cut -d'=' -f1)
+            var_value=$(echo "$line" | cut -d'=' -f2-)
+            
+            # Get suffix after TF_VAR_
+            suffix="${var_name#TF_VAR_}"
+            lowercase_suffix=$(echo "$suffix" | tr '[:upper:]' '[:lower:]')
+            new_var_name="TF_VAR_${lowercase_suffix}"
+            
+            echo "${new_var_name}=${var_value}" >> $GITHUB_ENV
+            echo "${var_name}=${var_value}" >> $GITHUB_ENV
+            
+            echo "✅ ${var_name} -> ${new_var_name} = ${var_value}"
+          done
           
-          # Transform TF_VAR_ENVIRONMENT_NAME -> TF_VAR_environment_name
-          if [ -n "${{ vars.TF_VAR_ENVIRONMENT_NAME }}" ]; then
-            echo "TF_VAR_environment_name=${{ vars.TF_VAR_ENVIRONMENT_NAME }}" >> $GITHUB_ENV
-            echo "✅ TF_VAR_ENVIRONMENT_NAME -> TF_VAR_environment_name = ${{ vars.TF_VAR_ENVIRONMENT_NAME }}"
-          fi
+          # Also process regular UPPERCASE vars (not starting with TF_VAR_)
+          echo "$VARS_JSON" | jq -r 'to_entries[] | select(.key | startswith("TF_VAR_") | not) | "\(.key)=\(.value)"' | while IFS= read -r line; do
+            var_name=$(echo "$line" | cut -d'=' -f1)
+            var_value=$(echo "$line" | cut -d'=' -f2-)
+            
+            lowercase_name=$(echo "$var_name" | tr '[:upper:]' '[:lower:]')
+            
+            echo "TF_VAR_${lowercase_name}=${var_value}" >> $GITHUB_ENV
+            echo "TF_VAR_${var_name}=${var_value}" >> $GITHUB_ENV
+            
+            echo "✅ ${var_name} -> TF_VAR_${lowercase_name} = ${var_value}"
+          done
           
-          # Transform TF_VAR_PROJECT_ID -> TF_VAR_project_id  
-          if [ -n "${{ vars.TF_VAR_PROJECT_ID }}" ]; then
-            echo "TF_VAR_project_id=${{ vars.TF_VAR_PROJECT_ID }}" >> $GITHUB_ENV
-            echo "✅ TF_VAR_PROJECT_ID -> TF_VAR_project_id = ${{ vars.TF_VAR_PROJECT_ID }}"
-          fi
-          
-          # Also transform regular UPPERCASE vars
-          if [ -n "${{ vars.ENVIRONMENT_NAME }}" ]; then
-            echo "TF_VAR_environment_name=${{ vars.ENVIRONMENT_NAME }}" >> $GITHUB_ENV
-            echo "TF_VAR_ENVIRONMENT_NAME=${{ vars.ENVIRONMENT_NAME }}" >> $GITHUB_ENV
-            echo "✅ ENVIRONMENT_NAME -> TF_VAR_environment_name = ${{ vars.ENVIRONMENT_NAME }}"
-          fi
-          
-          if [ -n "${{ vars.PROJECT_ID }}" ]; then
-            echo "TF_VAR_project_id=${{ vars.PROJECT_ID }}" >> $GITHUB_ENV
-            echo "TF_VAR_PROJECT_ID=${{ vars.PROJECT_ID }}" >> $GITHUB_ENV
-            echo "✅ PROJECT_ID -> TF_VAR_project_id = ${{ vars.PROJECT_ID }}"
-          fi
-          
+          echo ""
+          echo "Total variables processed: $(echo "$VARS_JSON" | jq 'length')"
           echo ""
       
       - name: Verify Transformed Variables
