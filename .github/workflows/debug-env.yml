@@ -1,0 +1,35 @@
+name: Debug Environment Variables
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug-without-env:
+    name: Debug Without Environment
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Show all environment variables
+        run: |
+          echo "=== ALL Environment Variables ==="
+          env | sort
+          echo ""
+          echo "=== TF_VAR_ Variables ==="
+          env | grep TF_VAR_ || echo "No TF_VAR_ variables found"
+  
+  debug-with-env:
+    name: Debug With Test Environment
+    runs-on: ubuntu-latest
+    environment: test
+    
+    steps:
+      - name: Show all environment variables
+        run: |
+          echo "=== ALL Environment Variables (with test environment) ==="
+          env | sort
+          echo ""
+          echo "=== TF_VAR_ Variables ==="
+          env | grep TF_VAR_ || echo "No TF_VAR_ variables found"
+          echo ""
+          echo "=== GitHub Secrets/Vars ==="
+          echo "Available vars should show up above if configured in environment 'test'"
