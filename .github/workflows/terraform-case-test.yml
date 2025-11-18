@@ -43,7 +43,7 @@ jobs:
           VARS_JSON: ${{ toJson(vars) }}
         run: |
           set -euo pipefail
-          
+
           echo "🔄 Transforming TF_VAR_* variables to lowercase..."
           
           # Count variables
@@ -67,22 +67,26 @@ jobs:
             lowercase_suffix=$(echo "$suffix" | tr '[:upper:]' '[:lower:]')
             new_var_name="TF_VAR_${lowercase_suffix}"
             
-            # Skip if already lowercase
-            if [ "$var_name" = "$new_var_name" ]; then
-              continue
-            fi
-            
             # Export using heredoc for multiline/JSON safety
             {
               echo "${new_var_name}<<GITHUB_ENV_EOF"
               echo "${var_value}"
               echo "GITHUB_ENV_EOF"
             } >> $GITHUB_ENV
+            
+            # Log transformation (truncate long values)
+            if [ ${#var_value} -gt 100 ]; then
+              display_value="${var_value:0:97}..."
+            else
+              display_value="$var_value"
+            fi
+            
+            echo "  ✓ ${var_name} → ${new_var_name}"
+            echo "    ${display_value}"
           done
           
           echo ""
-          echo "✅ Transformed $total_vars variable(s)"
-      
+          echo "✅ Successfully transformed $total_vars variable(s)"
       - name: Show Transformed Variables
         run: |
           echo ""
