@@ -92,7 +92,7 @@ jobs:
           echo ""
           echo "✅ Transformed $total_vars variable(s)"
           echo ""
-          env | grep TF_VAR_ | sort
+          env | grep "^TF_VAR_" | grep "^TF_VAR_[a-z]" | sort || echo "No transformed variables"
           echo ""
       
       - name: Terraform Init
