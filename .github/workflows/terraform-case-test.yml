@@ -82,18 +82,12 @@ jobs:
           
           echo ""
           echo "✅ Transformed $total_vars variable(s)"
+      
+      - name: Show Transformed Variables
+        run: |
           echo ""
-          
-          # Display all transformed variables
-          printenv | grep "^TF_VAR_" | sort | while IFS= read -r line; do
-            var_name=$(echo "$line" | cut -d'=' -f1)
-            
-            # Only show if lowercase (skip UPPERCASE originals)
-            if echo "$var_name" | grep -qE "^TF_VAR_[a-z]"; then
-              echo "$line"
-            fi
-          done
-          
+          echo "Transformed variables:"
+          env | grep "^TF_VAR_" | grep "^TF_VAR_[a-z]" | sort
           echo ""
       
       - name: Terraform Init
