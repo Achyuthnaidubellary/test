@@ -85,7 +85,7 @@ jobs:
             
           done
           
-          echo "✅ Successfully transformed $total_vars variable(s)"
+          echo "Successfully transformed $total_vars variable(s)"
 
       - name: Terraform Init
         run: terraform init
