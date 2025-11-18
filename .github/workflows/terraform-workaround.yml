@@ -41,7 +41,7 @@ jobs:
         run: |
           set -euo pipefail
           
-          echo "🔄 Transforming all variables to lowercase Terraform format..."
+          echo "🔄 Transforming TF_VAR_* variables to lowercase..."
           
           total_vars=$(echo "$VARS_JSON" | jq 'length')
           
@@ -52,8 +52,6 @@ jobs:
           
           echo "📦 Processing $total_vars variable(s)..."
           echo ""
-          
-          processed=0
           
           # Process TF_VAR_* variables (already prefixed)
           echo "$VARS_JSON" | jq -c 'to_entries[] | select(.key | startswith("TF_VAR_"))' | while IFS= read -r entry; do
@@ -74,15 +72,6 @@ jobs:
               echo "${var_value}"
               echo "GITHUB_ENV_EOF"
             } >> $GITHUB_ENV
-            
-            if [ ${#var_value} -gt 60 ]; then
-              display_value="${var_value:0:57}..."
-            else
-              display_value="$var_value"
-            fi
-            
-            echo "  ✓ ${var_name} → ${new_var_name} = ${display_value}"
-            ((processed++)) || true
           done
           
           # Process regular variables (add TF_VAR_ prefix and lowercase)
@@ -98,23 +87,11 @@ jobs:
               echo "${var_value}"
               echo "GITHUB_ENV_EOF"
             } >> $GITHUB_ENV
-            
-            if [ ${#var_value} -gt 60 ]; then
-              display_value="${var_value:0:57}..."
-            else
-              display_value="$var_value"
-            fi
-            
-            echo "  ✓ ${var_name} → ${new_var_name} = ${display_value}"
-            ((processed++)) || true
           done
           
           echo ""
-          echo "✅ Successfully transformed $total_vars variable(s)"
-      
-      - name: Verify Transformed Variables
-        run: |
-          echo "=== Transformed TF_VAR_ Variables ==="
+          echo "✅ Transformed $total_vars variable(s)"
+          echo ""
           env | grep TF_VAR_ | sort
           echo ""
       
