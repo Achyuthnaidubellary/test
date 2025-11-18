@@ -38,51 +38,55 @@ jobs:
           echo "TF_VAR_NAME: ${{ vars.TF_VAR_NAME }}"
           echo ""
       
-      - name: Transform ALL TF_VAR_* to lowercase (Dynamic)
+      - name: Transform TF_VAR_* to lowercase
         env:
           VARS_JSON: ${{ toJson(vars) }}
         run: |
-          echo "=== Dynamically Transforming ALL TF_VAR_* variables to lowercase ==="
+          set -euo pipefail
           
-          # Parse all GitHub variables and transform TF_VAR_* ones
+          echo "🔄 Transforming TF_VAR_* variables to lowercase..."
+          
+          # Count variables
+          total_vars=$(echo "$VARS_JSON" | jq '[to_entries[] | select(.key | startswith("TF_VAR_"))] | length')
+          
+          if [ "$total_vars" -eq 0 ]; then
+            echo "⚠️  No TF_VAR_* variables found in environment"
+            exit 0
+          fi
+          
+          echo "📦 Processing $total_vars variable(s)..."
+          echo ""
+          
+          # Transform each TF_VAR_* variable to lowercase
           echo "$VARS_JSON" | jq -c 'to_entries[] | select(.key | startswith("TF_VAR_"))' | while IFS= read -r entry; do
-            # Extract variable name and value properly with jq
             var_name=$(echo "$entry" | jq -r '.key')
             var_value=$(echo "$entry" | jq -r '.value')
             
-            # Get the part after TF_VAR_
+            # Extract suffix and convert to lowercase
             suffix="${var_name#TF_VAR_}"
-            
-            # Convert suffix to lowercase
             lowercase_suffix=$(echo "$suffix" | tr '[:upper:]' '[:lower:]')
-            
-            # Create new variable name
             new_var_name="TF_VAR_${lowercase_suffix}"
             
-            # Export to GITHUB_ENV using heredoc to handle multiline/JSON
+            # Export using heredoc for multiline/JSON safety
             {
-              echo "${new_var_name}<<EOF"
+              echo "${new_var_name}<<GITHUB_ENV_EOF"
               echo "${var_value}"
-              echo "EOF"
+              echo "GITHUB_ENV_EOF"
             } >> $GITHUB_ENV
             
-            # Also keep original UPPERCASE version for comparison
-            {
-              echo "${var_name}<<EOF"
-              echo "${var_value}"
-              echo "EOF"
-            } >> $GITHUB_ENV
+            # Log transformation (truncate long values)
+            if [ ${#var_value} -gt 100 ]; then
+              display_value="${var_value:0:97}..."
+            else
+              display_value="$var_value"
+            fi
             
-            # Display (truncate if too long)
-            display_value=$(echo "$var_value" | head -c 80)
-            [ ${#var_value} -gt 80 ] && display_value="${display_value}..."
-            echo "✅ ${var_name} -> ${new_var_name}"
-            echo "   Value: ${display_value}"
+            echo "  ✓ ${var_name} → ${new_var_name}"
+            echo "    ${display_value}"
           done
           
           echo ""
-          echo "Total TF_VAR_* variables processed: $(echo "$VARS_JSON" | jq '[to_entries[] | select(.key | startswith("TF_VAR_"))] | length')"
-          echo ""
+          echo "✅ Successfully transformed $total_vars variable(s)"
       
       - name: Display Transformed Environment Variables
         run: |

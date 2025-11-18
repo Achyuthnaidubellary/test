@@ -35,69 +35,79 @@ jobs:
           echo "TF_VAR_PROJECT_ID=${{ vars.TF_VAR_PROJECT_ID }}"
           echo ""
       
-      - name: Transform ALL TF_VAR_* to lowercase (Dynamic)
+      - name: Transform TF_VAR_* to lowercase
         env:
           VARS_JSON: ${{ toJson(vars) }}
         run: |
-          echo "=== Dynamically Transforming ALL variables to lowercase ==="
+          set -euo pipefail
           
-          # Process ALL TF_VAR_* variables
+          echo "🔄 Transforming all variables to lowercase Terraform format..."
+          
+          total_vars=$(echo "$VARS_JSON" | jq 'length')
+          
+          if [ "$total_vars" -eq 0 ]; then
+            echo "⚠️  No variables found in environment"
+            exit 0
+          fi
+          
+          echo "📦 Processing $total_vars variable(s)..."
+          echo ""
+          
+          processed=0
+          
+          # Process TF_VAR_* variables (already prefixed)
           echo "$VARS_JSON" | jq -c 'to_entries[] | select(.key | startswith("TF_VAR_"))' | while IFS= read -r entry; do
             var_name=$(echo "$entry" | jq -r '.key')
             var_value=$(echo "$entry" | jq -r '.value')
             
-            # Get suffix after TF_VAR_
             suffix="${var_name#TF_VAR_}"
             lowercase_suffix=$(echo "$suffix" | tr '[:upper:]' '[:lower:]')
             new_var_name="TF_VAR_${lowercase_suffix}"
             
-            # Export using heredoc for multiline/JSON support
             {
-              echo "${new_var_name}<<EOF"
+              echo "${new_var_name}<<GITHUB_ENV_EOF"
               echo "${var_value}"
-              echo "EOF"
+              echo "GITHUB_ENV_EOF"
             } >> $GITHUB_ENV
             
-            {
-              echo "${var_name}<<EOF"
-              echo "${var_value}"
-              echo "EOF"
-            } >> $GITHUB_ENV
+            if [ ${#var_value} -gt 100 ]; then
+              display_value="${var_value:0:97}..."
+            else
+              display_value="$var_value"
+            fi
             
-            display_value=$(echo "$var_value" | head -c 80)
-            [ ${#var_value} -gt 80 ] && display_value="${display_value}..."
-            echo "✅ ${var_name} -> ${new_var_name}"
-            echo "   Value: ${display_value}"
+            echo "  ✓ ${var_name} → ${new_var_name}"
+            echo "    ${display_value}"
+            ((processed++)) || true
           done
           
-          # Also process regular UPPERCASE vars (not starting with TF_VAR_)
+          # Process regular variables (add TF_VAR_ prefix and lowercase)
           echo "$VARS_JSON" | jq -c 'to_entries[] | select(.key | startswith("TF_VAR_") | not)' | while IFS= read -r entry; do
             var_name=$(echo "$entry" | jq -r '.key')
             var_value=$(echo "$entry" | jq -r '.value')
             
             lowercase_name=$(echo "$var_name" | tr '[:upper:]' '[:lower:]')
+            new_var_name="TF_VAR_${lowercase_name}"
             
             {
-              echo "TF_VAR_${lowercase_name}<<EOF"
+              echo "${new_var_name}<<GITHUB_ENV_EOF"
               echo "${var_value}"
-              echo "EOF"
+              echo "GITHUB_ENV_EOF"
             } >> $GITHUB_ENV
             
-            {
-              echo "TF_VAR_${var_name}<<EOF"
-              echo "${var_value}"
-              echo "EOF"
-            } >> $GITHUB_ENV
+            if [ ${#var_value} -gt 100 ]; then
+              display_value="${var_value:0:97}..."
+            else
+              display_value="$var_value"
+            fi
             
-            display_value=$(echo "$var_value" | head -c 80)
-            [ ${#var_value} -gt 80 ] && display_value="${display_value}..."
-            echo "✅ ${var_name} -> TF_VAR_${lowercase_name}"
-            echo "   Value: ${display_value}"
+            echo "  ✓ ${var_name} → ${new_var_name}"
+            echo "    ${display_value}"
+            ((processed++)) || true
           done
           
           echo ""
-          echo "Total variables processed: $(echo "$VARS_JSON" | jq 'length')"
-          echo ""
+          echo "✅ Successfully transformed $total_vars variable(s)"
       
       - name: Verify Transformed Variables
         run: |
