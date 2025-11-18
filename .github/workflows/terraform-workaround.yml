@@ -1,0 +1,99 @@
+name: Terraform Case Sensitivity - With Workaround
+
+on:
+  workflow_dispatch:
+
+env:
+  # GitHub environment variables (UPPERCASE - typical GitHub convention)
+  ENVIRONMENT_NAME: "production"
+  PROJECT_ID: "my-prod-project-456"
+  REGION: "us-west-2"
+  CLUSTER_NAME: "prod-cluster"
+
+jobs:
+  terraform-with-workaround:
+    name: Test with Case Transformation Workaround
+    runs-on: ubuntu-latest
+    environment: test
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+      
+      - name: Display Original GitHub Env Vars
+        run: |
+          echo "=== Original GitHub Environment Variables (UPPERCASE) ==="
+          echo "ENVIRONMENT_NAME=$ENVIRONMENT_NAME"
+          echo "PROJECT_ID=$PROJECT_ID"
+          echo "REGION=$REGION"
+          echo "CLUSTER_NAME=$CLUSTER_NAME"
+          echo ""
+      
+      - name: Transform to Terraform-compatible Variables
+        run: |
+          echo "=== Transforming to TF_VAR_ format (lowercase) ==="
+          # Workaround: Create lowercase TF_VAR_ variables from UPPERCASE GitHub vars
+          echo "TF_VAR_environment_name=${ENVIRONMENT_NAME,,}" >> $GITHUB_ENV
+          echo "TF_VAR_project_id=${PROJECT_ID,,}" >> $GITHUB_ENV
+          echo "TF_VAR_region=${REGION,,}" >> $GITHUB_ENV
+          echo "TF_VAR_cluster_name=${CLUSTER_NAME,,}" >> $GITHUB_ENV
+          
+          # Also set UPPERCASE versions for comparison
+          echo "TF_VAR_ENVIRONMENT_NAME=$ENVIRONMENT_NAME" >> $GITHUB_ENV
+          echo "TF_VAR_PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
+          
+          # Check if TF_VAR_NAME is available from GitHub environment
+          echo "GitHub environment variables will be automatically available"
+          echo ""
+      
+      - name: Verify Transformed Variables
+        run: |
+          echo "=== Transformed TF_VAR_ Variables ==="
+          env | grep TF_VAR_ | sort
+          echo ""
+      
+      - name: Terraform Init
+        run: terraform init
+      
+      - name: Terraform Plan
+        run: |
+          echo "=== Running Terraform Plan ==="
+          terraform plan -no-color
+      
+      - name: Terraform Apply
+        run: |
+          echo "=== Running Terraform Apply ==="
+          terraform apply -auto-approve -no-color
+      
+      - name: Display Results
+        run: |
+          echo "=== Terraform Outputs ==="
+          terraform output -json | jq '.'
+          echo ""
+          echo "=== Test Results File ==="
+          cat terraform-output.txt
+          echo ""
+      
+      - name: Success Summary
+        run: |
+          echo "✅ WORKAROUND SUCCESSFUL!"
+          echo ""
+          echo "Solution: Transform UPPERCASE GitHub vars to lowercase TF_VAR_ format"
+          echo "Method: Use bash parameter expansion \${VAR,,} to convert to lowercase"
+          echo ""
+          echo "Example:"
+          echo "  ENVIRONMENT_NAME='PROD' → TF_VAR_environment_name='prod'"
+          echo ""
+          echo "This allows you to:"
+          echo "  1. Keep UPPERCASE convention in GitHub environment variables"
+          echo "  2. Use lowercase (best practice) in Terraform variable definitions"
+          echo "  3. Transform between them in the workflow"
+      
+      - name: Cleanup
+        if: always()
+        run: terraform destroy -auto-approve -no-color || true

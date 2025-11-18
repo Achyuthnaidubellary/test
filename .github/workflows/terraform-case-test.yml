@@ -1,0 +1,97 @@
+name: Terraform Case Sensitivity Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  # REAL SCENARIO: GitHub typically uses UPPERCASE for env vars
+  # Testing if UPPERCASE GitHub vars can map to lowercase Terraform variables
+  
+  # REAL SCENARIO: GitHub typically uses UPPERCASE for env vars
+  # Testing if UPPERCASE GitHub vars can map to lowercase Terraform variables
+  
+  # Attempt 1: UPPERCASE env var trying to set lowercase terraform var
+  TF_VAR_ENVIRONMENT_NAME: "github-env-UPPERCASE"
+  TF_VAR_PROJECT_ID: "github-project-UPPERCASE"
+  TF_VAR_REGION: "us-west-2"
+  TF_VAR_CLUSTER_NAME: "my-cluster"
+
+jobs:
+  terraform-case-test:
+    name: Test Terraform Variable Case Sensitivity
+    runs-on: ubuntu-latest
+    environment: test
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+      
+      - name: Display Environment Variables
+        run: |
+          echo "=== Environment Variables Set ==="
+          env | grep TF_VAR_ | sort
+          echo ""
+      
+      - name: Terraform Init
+        run: terraform init
+      
+      - name: Terraform Validate
+        run: terraform validate
+      
+      - name: Terraform Plan
+        run: |
+          echo "=== Running Terraform Plan ==="
+          terraform plan -no-color
+      
+      - name: Terraform Apply
+        run: |
+          echo "=== Running Terraform Apply ==="
+          terraform apply -auto-approve -no-color
+      
+      - name: Display Terraform Outputs
+        run: |
+          echo "=== Terraform Outputs ==="
+          terraform output -json | jq '.'
+      
+      - name: Show Test Results File
+        run: |
+          echo "=== Test Results from File ==="
+          cat terraform-output.txt
+          echo ""
+      
+      - name: Test Summary
+        run: |
+          echo "=== Test Summary ==="
+          echo "This workflow tests the REAL SCENARIO:"
+          echo "GitHub env vars are UPPERCASE, but Terraform vars are lowercase"
+          echo ""
+          echo "Expected behavior:"
+          echo "- TF_VAR_ENVIRONMENT_NAME will NOT set 'environment_name' (case mismatch)"
+          echo "- TF_VAR_environment_name WILL set 'environment_name' (exact match)"
+          echo "- Lowercase Terraform variables require exact case match in TF_VAR_"
+          echo ""
+          echo "WORKAROUND: Use lowercase in GitHub env vars or transform in workflow"
+          echo "Check the outputs above to see which variables got set."
+      
+      - name: Upload Terraform Output
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-test-results
+          path: |
+            terraform-output.txt
+            terraform.tfstate
+          retention-days: 7
+      
+      - name: Cleanup
+        if: always()
+        run: |
+          terraform destroy -auto-approve -no-color || true

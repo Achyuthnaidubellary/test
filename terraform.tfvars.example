@@ -1,0 +1,12 @@
+# Example terraform.tfvars file
+# This shows the expected format for variables
+
+# Lowercase variables (Terraform best practice)
+environment_name = "dev"
+project_id       = "my-project-123"
+region           = "us-east-1"
+cluster_name     = "my-cluster"
+
+# UPPERCASE variables (for testing GitHub env var mapping)
+ENVIRONMENT_NAME = "DEV"
+PROJECT_ID       = "MY-PROJECT-123"
