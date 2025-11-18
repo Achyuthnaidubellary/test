@@ -44,17 +44,17 @@ jobs:
         run: |
           set -euo pipefail
 
-          echo "🔄 Transforming TF_VAR_* variables to lowercase..."
+          echo "Transforming TF_VAR_* variables to lowercase..."
           
           # Count variables
           total_vars=$(echo "$VARS_JSON" | jq '[to_entries[] | select(.key | startswith("TF_VAR_"))] | length')
           
           if [ "$total_vars" -eq 0 ]; then
-            echo "⚠️  No TF_VAR_* variables found in environment"
+            echo "No TF_VAR_* variables found in environment"
             exit 0
           fi
           
-          echo "📦 Processing $total_vars variable(s)..."
+          echo "Processing $total_vars variable(s)..."
           echo ""
           
           # Transform each TF_VAR_* variable to lowercase
@@ -85,15 +85,8 @@ jobs:
             
           done
           
-          echo ""
           echo "✅ Successfully transformed $total_vars variable(s)"
-      - name: Show Transformed Variables
-        run: |
-          echo ""
-          echo "Transformed variables:"
-          env | grep "^TF_VAR_" | grep "^TF_VAR_[a-z]" | sort
-          echo ""
-      
+
       - name: Terraform Init
         run: terraform init
       
