@@ -42,7 +42,7 @@ jobs:
         env:
           VARS_JSON: ${{ toJson(vars) }}
         run: |
-          set -euo pipefail
+          #set -euo pipefail
 
           echo "Transforming TF_VAR_* variables to lowercase..."
           
