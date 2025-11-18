@@ -45,10 +45,10 @@ jobs:
           echo "=== Dynamically Transforming ALL TF_VAR_* variables to lowercase ==="
           
           # Parse all GitHub variables and transform TF_VAR_* ones
-          echo "$VARS_JSON" | jq -r 'to_entries[] | select(.key | startswith("TF_VAR_")) | "\(.key)=\(.value)"' | while IFS= read -r line; do
-            # Extract variable name and value
-            var_name=$(echo "$line" | cut -d'=' -f1)
-            var_value=$(echo "$line" | cut -d'=' -f2-)
+          echo "$VARS_JSON" | jq -c 'to_entries[] | select(.key | startswith("TF_VAR_"))' | while IFS= read -r entry; do
+            # Extract variable name and value properly with jq
+            var_name=$(echo "$entry" | jq -r '.key')
+            var_value=$(echo "$entry" | jq -r '.value')
             
             # Get the part after TF_VAR_
             suffix="${var_name#TF_VAR_}"
@@ -59,13 +59,25 @@ jobs:
             # Create new variable name
             new_var_name="TF_VAR_${lowercase_suffix}"
             
-            # Export to GITHUB_ENV
-            echo "${new_var_name}=${var_value}" >> $GITHUB_ENV
+            # Export to GITHUB_ENV using heredoc to handle multiline/JSON
+            {
+              echo "${new_var_name}<<EOF"
+              echo "${var_value}"
+              echo "EOF"
+            } >> $GITHUB_ENV
             
             # Also keep original UPPERCASE version for comparison
-            echo "${var_name}=${var_value}" >> $GITHUB_ENV
+            {
+              echo "${var_name}<<EOF"
+              echo "${var_value}"
+              echo "EOF"
+            } >> $GITHUB_ENV
             
-            echo "✅ ${var_name} -> ${new_var_name} = ${var_value}"
+            # Display (truncate if too long)
+            display_value=$(echo "$var_value" | head -c 80)
+            [ ${#var_value} -gt 80 ] && display_value="${display_value}..."
+            echo "✅ ${var_name} -> ${new_var_name}"
+            echo "   Value: ${display_value}"
           done
           
           echo ""
