@@ -84,8 +84,8 @@ jobs:
           echo "✅ Transformed $total_vars variable(s)"
           echo ""
           
-          # Display transformed variables
-          for var_name in $(env | grep "^TF_VAR_[a-z]" | cut -d'=' -f1 | sort); do
+          # Display transformed variables (lowercase only)
+          for var_name in $(env | grep "^TF_VAR_" | grep -E "^TF_VAR_[a-z_]+$" | cut -d'=' -f1 | sort); do
             var_value="${!var_name}"
             
             # Try to format as JSON if it's valid JSON
@@ -95,7 +95,7 @@ jobs:
             else
               echo "${var_name}=${var_value}"
             fi
-          done
+          done || echo "No transformed variables to display"
           
           echo ""
       
