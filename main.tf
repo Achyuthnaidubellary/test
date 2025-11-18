@@ -55,6 +55,19 @@ variable "NAME" {
   default     = "DEFAULT-NAME-UPPER"
 }
 
+# Test JSON variable
+variable "config_map" {
+  description = "JSON configuration map (lowercase)"
+  type        = string
+  default     = "{\"default\": true}"
+}
+
+variable "CONFIG_MAP" {
+  description = "JSON configuration map (UPPERCASE)"
+  type        = string
+  default     = "{\"default\": true, \"upper\": true}"
+}
+
 # Output to see what values were actually set
 output "test_results" {
   description = "Shows which variables received values from GitHub env vars"
@@ -67,6 +80,8 @@ output "test_results" {
     ENVIRONMENT_NAME_UPPERCASE  = var.ENVIRONMENT_NAME
     PROJECT_ID_UPPERCASE        = var.PROJECT_ID
     NAME_UPPERCASE              = var.NAME
+    config_map_lowercase        = var.config_map
+    CONFIG_MAP_UPPERCASE        = var.CONFIG_MAP
   }
 }
 
@@ -102,6 +117,11 @@ resource "local_file" "test_output" {
     ENVIRONMENT_NAME: ${var.ENVIRONMENT_NAME}
     PROJECT_ID: ${var.PROJECT_ID}
     NAME: ${var.NAME}
+    
+    JSON Variables Test:
+    --------------------
+    config_map (lowercase): ${var.config_map}
+    CONFIG_MAP (UPPERCASE): ${var.CONFIG_MAP}
     
     FINDINGS:
     --------
