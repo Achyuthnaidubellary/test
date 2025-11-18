@@ -81,8 +81,8 @@ jobs:
               display_value="$var_value"
             fi
             
-            echo "  ✓ ${var_name} → ${new_var_name}"
-            echo "    ${display_value}"
+            echo "${new_var_name} = ${display_value}"
+            
           done
           
           echo ""
